@@ -1,0 +1,38 @@
+#!/bin/bash
+
+curState=$(cat "/opt/homeAutoServer/tmp/"`basename "$0"`".state")
+prevState=$curState
+
+if [ "$curState" == "on" ]; then
+  `dirname $0`/sendToArduino /dev/ttyACM0 0
+  echo "off" > "/opt/homeAutoServer/tmp/"`basename "$0"`".state"
+else
+  `dirname $0`/sendToArduino /dev/ttyACM0 1
+  echo "on" > "/opt/homeAutoServer/tmp/"`basename "$0"`".state"
+fi
+curState=$(cat "/opt/homeAutoServer/tmp/"`basename "$0"`".state")
+
+echo "`date +%Y-%m-%dT%H:%M:%S`|$0|$res" >> /var/log/homeAuto_`date +%Y_%m_%d`.log
+/shared/scripts/sendTelegram.py 217477543 "FYI - AutoReport: Turned on/off boiler ($prevState -> $curState)"
+echo "Turned on/off boiler ($prevState -> $curState)"
+
+# Old solution that used the CloudBit
+#res=$(curl -i -XPOST -H "Content-Type: application/json" -H "Authorization: 8d6db7e8a7dd4667509496b675bb4560d986d3efbb56955dc5c948a942367f2b" https://api-http.littlebitscloud.cc/v2/devices/00e04c1e8c3a/output -d '{ "percent": 100, "duration_ms": 500}' | sed ':a;N;$!ba;s/\r/ /g' | sed ':a;N;$!ba;s/\n/\^P/g')
+#resSuccessful=$(echo "$res" | grep '{"success":true}' | wc -l)
+#curState=$(cat "/opt/homeAutoServer/tmp/"`basename "$0"`".state")
+#prevState=$curState
+#
+#if [ "$resSuccessful" != "0" ]; then
+#  if [ "$curState" == "on" ]; then
+#    echo "off" > "/opt/homeAutoServer/tmp/"`basename "$0"`".state"
+#  else
+#    echo "on" > "/opt/homeAutoServer/tmp/"`basename "$0"`".state"
+#  fi
+#else
+#  logger "$0 WARN: Result not successful."
+#fi
+#
+#curState=$(cat "/opt/homeAutoServer/tmp/"`basename "$0"`".state")
+#logger "$0: RES=$res"
+#echo "`date +%Y-%m-%dT%H:%M:%S`|$0|$res" >> /var/log/homeAuto_`date +%Y_%m_%d`.log
+#/shared/scripts/sendTelegram.py 217477543 "FYI: Turned on/off boiler ($prevState -> $curState)"

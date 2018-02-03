@@ -1,0 +1,18 @@
+#!/bin/bash
+curState=$(cat "/opt/homeAutoServer/tmp/turn-on-off-boiler_Manual.state")
+
+if [ "$curState" == "on" ]; then
+  /shared/scripts/sendTelegram.py 217477543 "FYI: Turned on boiler - Already on"
+fi
+for i in `seq 1 1 50`; do
+  if [ "$curState" != "on" ]; then
+    `dirname $0`"/turn-on-off-boiler_Manual"
+    curState=$(cat "/opt/homeAutoServer/tmp/turn-on-off-boiler_Manual.state")
+
+    sleep 6s
+  else
+    echo "Done."
+    exit
+  fi
+done
+
